@@ -1,16 +1,15 @@
-# Lustre VM on Rocky Linux 9 — Lima configuration
+# lustre VM on Rocky Linux 9 - Lima configuration
+# Adapted from hpc-cloudos/lfsccm (CentOS 8 → Rocky 9)
+
 images:
   - location: "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
     arch: "x86_64"
 
 mounts:
   - location: "~"
-  - location: "/tmp/lima"
-    writable: true
 
-firmware:
-  legacyBIOS: true
-
-cpuType:
-  # Workaround for "vmx_write_mem: mmu_gva_to_gpa XXXXXXXXXXXXXXXX failed" on Intel Mac
-  x86_64: "Haswell-v4"
+vmOpts:
+  qemu:
+    cpuType:
+      # Workaround for "vmx_write_mem: mmu_gva_to_gpa failed" on some Intel CPUs
+      x86_64: "Haswell-v4"
