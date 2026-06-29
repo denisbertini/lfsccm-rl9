@@ -7,6 +7,8 @@ images:
 
 mounts:
   - location: "~"
+  - location: "/home/denis/work/ddn/lfsccm-rl9"
+    destination: "/lfsccm-rl9-project"
 
 vmOpts:
   qemu:
