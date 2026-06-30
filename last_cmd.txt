@@ -1,0 +1,9 @@
+# Completed — 2026-06-30 14:40 CEST
+# Setup.sh updated: idempotent, mount.tlt replaced, firewall disabled
+# Systemd autostart unit installed and enabled on VM `lustre` at /etc/systemd/system/lustre-mount.service
+# Persisted through limactl stop/start of lustre (tested)
+
+# To re-create:
+#   limactl shell lustre -- sudo bash /usr/local/bin/lustre-setup.sh
+
+# Next steps: verify /mnt/lustre survives reboot; run HPC jobs.

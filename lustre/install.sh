@@ -6,8 +6,7 @@ sudo dnf -y --nogpgcheck --enablerepo=lustre-server install \
   kmod-lustre \
   kmod-lustre-osd-ldiskfs \
   lustre \
-  lustre-osd-ldiskfs-mount \
-  lustre-resource-agents
+  lustre-osd-ldiskfs-mount
 
 # Recompile kmods against the currently-running kernel
 echo "=== Running kmodtool prepare (may take a few minutes)... ==="
