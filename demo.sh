@@ -1,19 +1,29 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "=== Step 1: Boot Lima VM ==="
-limactl start lustre || true
+VM_NAME="lustre"
+REPO="/home/denis/work/ddn/lfsccm-rl9"
 
-echo "=== Step 2: Lustpre pre-install (repol install) ==="
-limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/pre-install.sh"
+echo "=== [Step 1/5] Boot Lima VM ==="
+limactl start "$VM_NAME" || true
 
-echo "=== Step 3: Reboot for kernel deps ==="
-limactl stop lustre && limactl start lustre
+echo "=== [Step 2/5] Pre-install (repos, SELinux, Docker Engine) ==="
+limactl shell "$VM_NAME" bash -c "bash $REPO/lustre/pre-install.sh"
 
-echo "=== Step 4: Install Lustre packages + kmodtool ==="
-limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/install.sh"
+echo "=== [Step 3/5] Reboot for package deps ==="
+limactl stop "$VM_NAME" && limactl start "$VM_NAME"
 
-echo "=== Step 5: Format & mount Lustre ==="
-limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/setup.sh"
+echo "=== [Step 4/5] Install Lustre packages + kmodtool ==="
+limactl shell "$VM_NAME" bash -c "bash $REPO/lustre/install.sh"
 
-echo "=== Done! Enter VM:   limactl shell lustre"
+echo "=== [Step 5/5] Reboot + format/mount Lustre ==="
+limactl stop "$VM_NAME" && limactl start "$VM_NAME"
+limactl shell "$VM_NAME" bash -c "bash $REPO/lustre/setup.sh"
+
+echo ""
+echo "=============================================="
+echo "  Lustre is ready at /mnt/lustre"
+echo "  Enter the VM:  limactl shell lustre"
+echo "  Start Slurm-Docker:"
+echo "    limactl shell lustre cd $REPO/slurm-docker && docker-compose up -d"
+echo "=============================================="
