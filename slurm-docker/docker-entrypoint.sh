@@ -47,7 +47,7 @@ then
     if [ "${LUSTRE_ENABLED:-0}" = "1" ]; then
         echo "---> Waiting for Lustre mount ..."
         for i in $(seq 1 30); do
-            df /ustre &>/dev/null && break
+            df /lustre &>/dev/null && break
             sleep 2
         done
     fi
