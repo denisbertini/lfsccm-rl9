@@ -1,0 +1,37 @@
+# Session Checkpoint — 2026-06-30 22:45 CET
+## What is done
+[✅] Git merge conflicts resolved (AUTHORS, LICENSE, README.md) — Denis Bertini <d.bertini@gsi.de> maintainer
+[✅] Branch `slurm-bb` pushed to origin/
+[✅] `lustre-mpc/*` copied into `mpc/` subdirectory
+[✅] `~/work/dev/slurm-docker/*` copied into `slurm-docker/` subdirectory
+[✅] Python distutils fix → `packaging.version.Version`; packaging added to requirements.txt
+[✅] jobschedule.h garbage removed; jobscheduler.c implemented
+[✅] bb_c/plugin.c completed with all Slurm BB callbacks (init, fini, job_process, setup, data_in/out, paths, pre/post_run, teardown)
+[✅] docker-compose.lustre.yml created (`/mnt/lustre:/lustre` binds on c1-c4 + slurmctld)
+[✅] docker-entrypoint.sh rewritten: duplicate slurmd block removed, BB_PLUGIN env switcher adds Lustre wait loop
+[✅] demo.sh rewritten for clean Lima bringup (steps 1-5)
+[✅] test_integration.sh written (destroy→rebuild×3 loop)
+[✅] Dockerfile updated: lustre-mpc C plugin build phase added (COPY ../mpc → cmake+make → install .so + daemon + hook.so)
+[✅] slurm-docker/c3 & c4 typos fixed (`slaurmdd` → `slurmd`)
+[✅] pre-install.sh: Docker Engine install added for Lima VM
+[✅] All 7 tests pass under Python 3.14; flake8 clean
+[✅] Git clean, everything committed/pushed to `origin`
+
+## What remains
+[⏳] **Blocker: Lima mount failing** — `~` does NOT work for Lima on Linux. Repo files inaccessible inside VM via `/home/denis/work/ddn/lfsccm-rl9`. Every `limactl shell lustre bash -c '...'` fails with "No such file".
+[ ] Once mount works: run `pre-install.sh` → `install.sh` → `setup.sh` inside Lima
+[ ] Build + launch Docker Compose inside LM → verify `/lustre` visible on c1/c2/c3/c4
+[ ] Submit test sbatch job → confirm BurstBuffer hooks fire correctly
+[ ] Run idempotent verification ×3
+
+## Known blockers / findings
+| Issue | Status | Fix needed |
+|-------|--------|------------|
+| Lima `~` mount broken on Linux host | ✅ Confirmed | Rewrite `lustre.yaml` with explicit path OR use lima config workaround |
+| UBUNTU pulled by mistake | Fixed (rocky cached at `.cache/lima/download/by-url-sha...* |
+| Typo df /lus**tr**O → /lus**tre** everywhere | Patched & pushed |
+| test_integration typo: pipe `df \| grep` failed | Patched but not pushed yet |
+| pre-install `kmodtool prepare` may hang without interactive terminal | Monitor during runtime |
+
+## Architecture decision final
+**All-in-one Lima VM**: Single Rocky 9.8 VM runs Lustre MDS+OSS server, client view at `/mnt/lustre`, Plus Docker Compose multi-node cluster, zero pollution on the Linux Host. Each container gets `-v /mnt/lustre:/lustre`. Swappable via slurm.conf. Two plugins side-by-side available: legacy PCC + lustre_mpc native C plugin. Swap between them using `BB_PLUGIN` env var in entrypoint.sh
