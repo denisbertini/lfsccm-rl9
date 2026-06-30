@@ -35,4 +35,9 @@ sudo dnf -y --nogpgcheck --disablerepo=* --enablerepo=e2fsprogs-wc install e2fsp
 # Install kernel-devel for kmodtool preparation later
 sudo dnf -y --nogpgcheck install kernel-devel kernel-headers kernel-tools
 
+# Install Docker Engine for Slurm multi-node compose
+sudo dnf -y install --setopt=_skip_missing_digests=True docker-ce* containerd.io
+sudo systemctl enable --now docker &>/dev/null || true
+sudo usermod -aG docker $(whoami)
+
 echo "=== pre-install done. Now reboot: limactl stop lustre-rl9 && limactl start lustre-rl9 ==="
