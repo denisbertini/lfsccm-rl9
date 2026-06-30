@@ -1,9 +1,12 @@
 Maintainer
 ----------
-Kota Tsuyuzaki (kota.tsuyuzaki.pc@hco.ntt.co.jp)
-Yusuke Kaneko (yuusuke.kaneko.gs@s1.ntt-tx.co.jp)
+Denis Bertini <d.bertini@gsi.de>
 
-Original Authors
-----------------
+Original Authors (lfsccm project)
+---------------------------------
 Kota Tsuyuzaki (kota.tsuyuzaki.pc@hco.ntt.co.jp)
 Yusuke Kaneko (yuusuke.kaneko.gs@s1.ntt-tx.co.jp)
+NTT Corporation — https://github.com/hpc-cloudos/lfsccm
+
+This project is an adaptation of the lustre-VM setup from lfsccm,
+ported from CentOS 8 / Lustre 2.14 to Rocky Linux 9.7 / Lustre 2.17.

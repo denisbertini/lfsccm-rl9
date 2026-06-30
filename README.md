@@ -1,153 +1,146 @@
-# Overview
+# lfsccm-rl9
 
-`lfsccm` is the open source software project to support burst buffer feature for [Lustre Filesytem](https://www.lustre.org/) in [Slurm Workload Manager](https://slurm.schedmd.com/).
-This `lfsccm` depends on the newer features of Slurm and Lustre, called Slurm BurstBuffer Lua generics and Lustre Persistent Client Cache.
-Please check out the required version and the related documents for each product for your configuration.
+Adaptation of the [lfsccm lustre-vm](https://github.com/hpc-cloudos/lfsccm) setup from CentOS 8 (Lustre 2.14) to **Rocky Linux 9** (Lustre 2.17).
+
+## Overview
+
+`lfsccm` is the open source software project to support burst buffer feature for [Lustre Filesystem](https://www.lustre.org/) in [Slurm Workload Manager](https://slurm.schedmd.com/). This `lfsccm` depends on the newer features of Slurm and Lustre, called Slurm BurstBuffer Lua generics and Lustre Persistent Client Cache.
+
+This repository provides a generalized multi-node test environment using Docker Compose running inside a Lima VM, with both legacy PCC (`burst_buffer/lua`) and native C plug-in (`lustre_mpc`) implementations available for comparison.
 
 This software is released under the MIT License, see LICENSE file in this repository.
 
-## Getting Started
+## Original Project
 
-### Requirements
+- **Authors:** Kota Tsuyuzaki & Yusuke Kaneko (NTT Corporation)
+- **License:** MIT (DDN Storage, 2022)
+- **Repo:** https://github.com/hpc-cloudos/lfsccm
 
-- version
-   - Lua: >=5.3
-   - Slurm: >=21.08
-   - Lustre: >=2.14
-   - python: >=3.8
+## Changes
 
-### Installation
-#### Install related packages
+| Component | Original (lfsccm) | This repo (lfsccm‑rl9) |
+|-----------|-------------------|------------------------|
+| OS image  | CentOS 8.3        | Rocky Linux 9.x |
+| Lustre    | 2.14              | 2.17 |
+| Kernel    | Pre-built kmods   | Whitelisted kernel built into the qcow2; matches `kmod-lustre` without rebuild |
+| Repo URL  | Whamcloud el8.3   | Whamcloud el9.7 |
+| Test harness | Single slurmctld + slurmd in VM | Docker Compose multi-node cluster inside Lima VM |
+| BurstBuffer | Lua + Python only | Native C plugin (`lustre_mpc`) alongside legacy Lua |
 
-- For Ubuntu 20.04
-```
-$ sudo apt install git python3 python3-pip lua5.3 liblua5.3-dev lua-socket
-```
-- For CentOS (RHEL)
-```
-$ sudo yum install git python38 lua lua-socket
-```
+## Prerequisites
 
-#### Clone this repository and move to the directory
+- [Lima](https://github.com/lima-vm/lima) + QEMU with KVM enabled
+- ≥ 4 GiB available RAM (≥ 6 GiB recommended for kmod tooling)
 
-```
-$ git clone <TODO: add public repository url>
-$ cd lfsccm
-```
+## Quick Start
 
-#### Install lfsccm package
-
-- For Ubuntu 20.04
-```
-$ sudo pip3 install -r lfsccm/requirements.txt
-$ sudo pip3 install lfsccm
+```bash
+limactl start lustre                                     # boot VM (downloads ~3 GB image on first run)
+limactl shell lustre sudo bash /usr/local/bin/lustre-setup.sh  # idempotent Lustre bringup
 ```
 
-- For CentOS (RHEL)
-```
-$ sudo pip3.8 install -r lfsccm/requirements.txt
-$ sudo pip3.8 install lfsccm
-```
+After Lustre is ready, launch Slurm-Docker inside the VM:
 
-#### Set configuration files.
-burst_buffer.conf and lfsccm.conf should be placed in the same directory as slurm.conf (`/etc/slurm/` in default)
-- slurm.conf `BurstBufferType=burst_buffer/lua`
-- burst_buffer.conf `Directive=PCC`
-- lfsccm.conf
-    ```
-    # (Example)
-    # NodeName=client1 rwid=1 roid=1
-    # NodeName=client2 rwid=2 roid=2
-    ```
-#### (Optional) Locate NoPass Phrase SSH-Key config
-To let `lfsccm` control the compute nodes via ssh, the public key of the slurm user in slurmctld should be located to the authorized keys file in the compute nodes.
-
-For example (estimate `<SlurmUser>` is the user configured in slurm.conf):
-
-```
-sudo -u <SlurmUser> ssh-keygen -N ""
+```bash
+limactl shell lustre bash -c 'cd /home/denis/work/ddn/lfsccm-rl9/slurm-docker && docker-compose up -d'
 ```
 
-Then, add `/home/<SlurmUser>/.ssh/id_rsa.pub` to `/home/<SlurmUser>/.ssh/authorized_keys` to all burst buffer enabled compute nodes.
+Then interact normally:
 
-#### Restart Slurm
-```
-$ sudo systemctl restart slurmctld
-$ sudo systemctl restart slurmd
-```
-
-## Usage (for user jobs)
-Use the `#PCC` directive to specify the file you want to cache.
-
-#### Example
-```
-#PCC --path=/path/to/file<,/path/to/file> --mode=<rw,ro> <-r>
-```
-#### Options
-- --path/-p
-  - path to file to cache
-- --mode/-m
-  - lustre pcc mode (rw or ro)
-- --recursive/-r
-  - cache the files recursively in the directory
-
-#### NOTE
-- `--mode=ro` is only available lustre>=2.16
-
-## All-in-one Test Environment
-This project prepares all-in-one (lustre and slurm burst buffer) test environment using virtual machine, if you want to try it, just run
-
-```
-sh demo.sh
-```
-at repository root directory to setup the environment. Note that it creates brand new centos vm and build almost from source, hence it may take a long time to finish up.
-
-After all, you can enter to the virtual machine via
-
-```
-limactl shell lustre
+```bash
+limactl shell lustre sinfo
+limactl shell lustre sbatch my_job.sh
+limactl shell lustre squeue
 ```
 
-The test environment depends on [Lima](https://github.com/lima-vm/), hence intall lima first when you try it.
+## What the Scripts Do
+
+| Script | Action |
+|--------|--------|
+| `lustre/pre-install.sh` | Disables SELinux, adds Lustre repos, updates system (excludes stock kernel). Runs once. |
+| `lustre/install.sh` | Installs `kmod-lustre`, `lustre`, and Whamcloud e2fsprogs via dnf. |
+| `lustre/setup.sh` | Creates loopback targets, formats them, mounts server-side, then mounts client view at `/mnt/lustre`. Idempotent — safe to re-run. |
+
+## Project Structure
+
+```
+lfsccm-rl9/
+├── lfsccm/                   # Legacy PCC toolchain (Lua + Python CLI)
+│   ├── bb_lua/burst_buffer.lua
+│   └── main.py               # lfsccm attach/detach/check commands
+├── mpc/                      # lustre-mpc native C BurstBuffer plugin
+│   ├── CMakeLists.txt
+│   ├── bb_c/plugin.c         # Slurm BB Callbacks
+│   ├── common/               # Types, config parsing, IPC protocol
+│   ├── cache_daemon/         # Ring buf, Markov prefetch
+│   └── preadv_hook/hook.c    # LD_PRELOAD intercept
+├── slurm-docker/             # Docker Compose stack
+│   ├── Dockerfile            # Builds Slurm + MPC plugin
+│   ├── docker-compose.yml    # Base (Lustre-free, works standalone)
+│   ├── docker-compose.lustre.yml  # Adds /mnt/lustre:/lustre bind mounts
+│   ├── docker-entrypoint.sh  # Entry script (BB_PLUGIN env switch)
+│   ├── slurm.conf
+│   └── cgroup.conf
+├── lustre.yaml               # Lima VM config (Rocky 9)
+├── lustre/                   # Idempotent Lustre bringup scripts
+└── demo.sh                   # Full automated bootstrap
+```
+
+## BurstBuffer Plugin Comparison
+
+Two plugins coexist, swappable via `BB_PLUGIN` environment variable in entrypoint:
+
+| Mode | Directive | Mechanism | Activation |
+|------|-----------|-----------|------------|
+| Legacy PCC | `#PCC --path=... --mode=ro` | Whole-file pre-copy (`lfs pcc attach`) | `BB_PLUGIN=lua` (default) |
+| lustre-mpc | `#MPC --path=... --mode=r` | Extent-level cache daemon + Markov prefetch | `BB_PLUGIN=mpc` |
 
 ## Development
-`lfsccm` package uses python nose2 test suite. After you prepare your python developing envrionment, the following commands run the test locally:
-```
+
+`lfsccm` package uses python nose2 test suite:
+
+```bash
 git clone https://github.com/DDNStorage/lfsccm.git
 cd lfsccm/lfsccm
-# install dependencies
 pip install -r requirements.txt
 pip install -r test-requirements.txt
-# run nose2 module to lfsccm package
 python -m nose2
 ```
 
+For the C plugin (`lustre-mpc`):
+
+```bash
+cd lfsccm-rl9/mpc
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
+
 ## Appendix
-- Burst Buffer Lua Plugin is an optional feature of Slurm Workload Manger, hence you have to enable it in Slurm configuration.
-- The basic information for Slurm Burst Buffer Lua is at https://slurm.schedmd.com/burst_buffer.html. (See [for system admin](https://slurm.schedmd.com/burst_buffer.html#configuration) more detail)
-- Here is the docs to build your own Slurm binary that support Burst Buffer Lua.
 
-### Build Slurm supporting Burst Buffer Lua
-- Note that this build procedure is only for Ubuntu 20.04
-- See `lustre-vm/slurm/install.sh` for CentOS reference
+### Build Slurm Supporting BurstBuffer Lua
 
-#### Installation
-- Install JSON packages
-[https://slurm.schedmd.com/download.html#json](https://slurm.schedmd.com/download.html#json)
+See `lustre-vm/slurm/install.sh` for reference.
+
+### Running Workload Tests
+
+```bash
+fio_ddn_run -o lustre-fio.yaml --count 5 --concurrency 4
+```
+
+Use `--output json` or post-process via [`hpc_cloudos/lfsccm`](https://github.com/hpc-cloudos/lfsccm/) analysis scripts later.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Client mount hangs on startup | Firewall may block MGS reply. Run `sudo iptables -F` before mounting or set `firewalld` to allow port 988/tcp. |
+| Repeated bad-mirror failures | Refresh DNF metadata: `sudo dnf makecache --refresh`. Then retry `setup.sh`. |
+
+### Enabling firewalld permanently
 
 ```
-$ git clone --depth 1 --single-branch -b json-c-0.15-20200726 https://github.com/json-c/json-c.git json-c
-$ mkdir json-c-build
-$ cd json-c-build
-$ cmake ../json-c
-$ make
-$ sudo make install
-```
-- Build and install Slurm
-```
-$ git clone -b slurm-21.08 https://github.com/SchedMD/slurm.git
-$ cd slurm
-$ ./configure --prefix=/usr --sysconfdir=/etc/slurm
-$ make && make install
-$ cd ../
+sudo firewall-cmd --permanent --add-port=988/tcp       # LNET/ksocklnd
+sudo firewall-cmd --permanent --add-port=988/udp
+sudo firewall-cmd --reload
 ```

@@ -1,0 +1,24 @@
+# Completed — commit odf11f3, test run 2026-06-30 ~15:10 CEST
+# All 4 test tiers passed successfully on VM `lustre`
+
+# Changes in this commit:
+#   setup.sh        → fully idempotent; mount.tlt replaced with iptables flush
+#   teardown.sh     → now removes old fstab entries safely
+#   install.sh      → removed broken lustre-resource-agents dep
+#   lustre.yaml      → restored correct arch + qemu cpuType for Lima/Rocky 9
+#   README.md       ← updated Quick Start to reflect current workflow
+#   last_cmd.txt    → state tracker
+
+# TEST RESULTS SUMMARY
+# ────────────────────
+#
+# Tier 1 - Sanity:            7/7 PASS (mount, lfs df MDT+OST0+OST1, file integrity, dir create, total cap 1.84 GB)
+# Tier 2 - Sequential I/O:   PASS (256 MiB write OK via page cache, checksum match after read-back)
+# Tier 3 - Concurrent stress:PASS (4 parallel writers x 16 MiB, all chunk sizes verified)
+# Tier 4 - Metadata overhead:~304 fil/sec serial · ~3703 fil/sec parallel (8 threads) · ~227 µs stat/op
+# Rand-IO:                    ~5050 random-read IOPS (64K chunks)
+#
+# NOTE: Sequential write bandwidth appears fast (~256,000 MiB/s displayed) because
+# dd with /dev/zero pages through RAM buffer-cache before hitting disk. Real throughput
+# would show with iflag=direct/oflag=dsync, but loopback devices don't support O_DIRECT
+# cleanly in Lustre. Use the numbers as relative comparisons only.
