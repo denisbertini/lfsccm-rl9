@@ -11,7 +11,7 @@ import logging
 import os
 import paramiko
 import re
-from distutils.version import LooseVersion
+from packaging.version import Version as LooseVersion
 from itertools import zip_longest
 from multiprocessing import Pool
 import argparse
@@ -155,7 +155,7 @@ class Pcc(object):
                 return results
 
             for version in ver_m.groups():
-                if not LooseVersion(version) > \
+                if not LooseVersion(version) >= \
                         LooseVersion(MIN_LUSTRE_VERSION):
                     result['rc'] = 1
                     result['stderr'] = \

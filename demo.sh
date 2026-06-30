@@ -1,34 +1,19 @@
-# Copyright (C) 2022 Nippon Telegraph and Telephone Corporation.
 #!/bin/bash
+set -euo pipefail
 
-# fist startup will fail by timeout because of repo mismatch
-limactl start lustre-vm/lustre.yaml
+echo "=== Step 1: Boot Lima VM ==="
+limactl start lustre || true
 
-set -eu
-# then require repository url change
-limactl shell lustre sh -c "sudo sed -i 's/^mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-*"
-limactl shell lustre sh -c "sudo sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*"
+echo "=== Step 2: Lustpre pre-install (repol install) ==="
+limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/pre-install.sh"
 
-limactl stop lustre
-limactl start lustre
+echo "=== Step 3: Reboot for kernel deps ==="
+limactl stop lustre && limactl start lustre
 
-# setup lustre environ
-# those scripts refers to https://wiki.lustre.org/Installing_the_Lustre_Software
-limactl shell lustre sh lustre-vm/lustre/pre-install.sh
+echo "=== Step 4: Install Lustre packages + kmodtool ==="
+limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/install.sh"
 
-limactl stop lustre
-limactl start lustre
+echo "=== Step 5: Format & mount Lustre ==="
+limactl shell lustre bash -c "bash /home/$(whoami)/work/ddn/lfsccm-rl9/lustre/setup.sh"
 
-limactl shell lustre sh lustre-vm/lustre/install.sh
-
-limactl stop lustre
-limactl start lustre
-
-limactl shell lustre sh lustre-vm/lustre/setup.sh
-
-# setup slurm environ
-limactl shell lustre sh lustre-vm/slurm/install.sh
-
-# run demo script
-limactl shell lustre bash -c "sbatch -o ~/result lustre-vm/sample_jobs/fetch.sh"
-limactl shell lustre bash -c "cat ~/result"
+echo "=== Done! Enter VM:   limactl shell lustre"
