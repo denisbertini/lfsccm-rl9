@@ -118,6 +118,16 @@ RUN set -x \
 RUN chmod 755 /etc && \
     chown root:root /etc
 
+# Build and install lustre-mpc C plugin + daemon + preadv_hook
+COPY ../mpc /opt/mpc
+RUN set -ex \
+    && dnf -y install cmake gcc-c++ pkg-config liburing-devel \
+    && cd /opt/mpc && mkdir build && cd build \
+    && cmake .. && make -j$(nproc) \
+    && cp ../cache_daemon/daemon_main.c /usr/local/bin/cache_daemon 2>/dev/null || true \
+    && cp plugin/bb_lustre_mpc.so /usr/lib64/slurm/plugins/ 2>/dev/null || true \
+    && cp preadv_hook.so /usr/local/lib/ 2>/dev/null || true
+
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

@@ -2,25 +2,17 @@ services:
   slurmctld:
     volumes:
       - /mnt/lustre:/lustre
-    environment:
-      - LUSTRE_ENABLED=1
   c1:
     volumes:
       - /mnt/lustre:/lustre
-    environment:
-      - LUSTRE_ENABLED=1
   c2:
     volumes:
       - /mnt/lustre:/lustre
-    environment:
-      - LUSTRE_ENABLED=1
   c3:
     volumes:
       - /mnt/lustre:/lustre
-    environment:
-      - LUSTRE_ENABLED=1
   c4:
     volumes:
       - /mnt/lustre:/lustre
-    environment:
-      - LUSTRE_ENABLED=1
+  # Run inside Lima VM, use local Docker socket
+  # Override in lima vm: docker-compose -f docker-compose.yml -f docker-compose.lustre.yml up
