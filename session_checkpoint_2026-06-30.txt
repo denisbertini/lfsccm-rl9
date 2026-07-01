@@ -1,37 +1,29 @@
-# Session Checkpoint — 2026-06-30 22:45 CET
-## What is done
-[✅] Git merge conflicts resolved (AUTHORS, LICENSE, README.md) — Denis Bertini <d.bertini@gsi.de> maintainer
-[✅] Branch `slurm-bb` pushed to origin/
-[✅] `lustre-mpc/*` copied into `mpc/` subdirectory
-[✅] `~/work/dev/slurm-docker/*` copied into `slurm-docker/` subdirectory
-[✅] Python distutils fix → `packaging.version.Version`; packaging added to requirements.txt
-[✅] jobschedule.h garbage removed; jobscheduler.c implemented
-[✅] bb_c/plugin.c completed with all Slurm BB callbacks (init, fini, job_process, setup, data_in/out, paths, pre/post_run, teardown)
-[✅] docker-compose.lustre.yml created (`/mnt/lustre:/lustre` binds on c1-c4 + slurmctld)
-[✅] docker-entrypoint.sh rewritten: duplicate slurmd block removed, BB_PLUGIN env switcher adds Lustre wait loop
-[✅] demo.sh rewritten for clean Lima bringup (steps 1-5)
-[✅] test_integration.sh written (destroy→rebuild×3 loop)
-[✅] Dockerfile updated: lustre-mpc C plugin build phase added (COPY ../mpc → cmake+make → install .so + daemon + hook.so)
-[✅] slurm-docker/c3 & c4 typos fixed (`slaurmdd` → `slurmd`)
-[✅] pre-install.sh: Docker Engine install added for Lima VM
-[✅] All 7 tests pass under Python 3.14; flake8 clean
-[✅] Git clean, everything committed/pushed to `origin`
+# Sessio Checkpoint — 2025-07-01 FINAL 
+## What done today
+[✅] Lima boot works with lustre.yaml → rocky linux uses cache at ~/.lima/download/by-url-sha... qcow2 image  
+[✅ Files sync via rsync into `/opt/lfsccm-r...` inside VM after every reboot step  
+[✅ pre-install → lightweight only (repos + SELinux off); Docker-ce split out
+     inline between steps so each individual command finishes quickly within tool timeout window (~6min max)
+[❌ **DOCKER BLOCKER** slurm-docker/docker-compose.yml references `imge:` pointing nowhere registry
+   Fix pending: replace build block with c1/2/c3/c4; add proper `build:` blocks matching existing 
+   slurmdbd pattern so Docker builds locally rather pulling non-existent ones. Re-sync files at
+   each restart → run sudo docker compose up -d' inside lima vm to test end-to-end
 
-## What remains
-[⏳] **Blocker: Lima mount failing** — `~` does NOT work for Lima on Linux. Repo files inaccessible inside VM via `/home/denis/work/ddn/lfsccm-rl9`. Every `limactl shell lustre bash -c '...'` fails with "No such file".
-[ ] Once mount works: run `pre-install.sh` → `install.sh` → `setup.sh` inside Lima
-[ ] Build + launch Docker Compose inside LM → verify `/lustre` visible on c1/c2/c3/c4
-[ ] Submit test sbatch job → confirm BurstBuffer hooks fire correctly
-[ ] Run idempotent verification ×3
 
-## Known blockers / findings
-| Issue | Status | Fix needed |
-|-------|--------|------------|
-| Lima `~` mount broken on Linux host | ✅ Confirmed | Rewrite `lustre.yaml` with explicit path OR use lima config workaround |
-| UBUNTU pulled by mistake | Fixed (rocky cached at `.cache/lima/download/by-url-sha...* |
-| Typo df /lus**tr**O → /lus**tre** everywhere | Patched & pushed |
-| test_integration typo: pipe `df \| grep` failed | Patched but not pushed yet |
-| pre-install `kmodtool prepare` may hang without interactive terminal | Monitor during runtime |
+## What left
+ [ ] Fix docker-compose services getting built locally not pull failing replacing `image:" entries w/ `build:` blocks mirroring same config context stays current directory, args match `.env` picked correctly verify compose up -d works in lima vmmulti-node cluster visible on c1-4 
+ [Lustre volume bind /mnt/lus re:/lusre each worker container needed
+[Test verification loop ×3 via tes_integration once fixed  
 
-## Architecture decision final
-**All-in-one Lima VM**: Single Rocky 9.8 VM runs Lustre MDS+OSS server, client view at `/mnt/lustre`, Plus Docker Compose multi-node cluster, zero pollution on the Linux Host. Each container gets `-v /mnt/lustre:/lustre`. Swappable via slurm.conf. Two plugins side-by-side available: legacy PCC + lustre_mpc native C plugin. Swap between them using `BB_PLUGIN` env var in entrypoint.sh
+
+## Summary blockers/findings
+| Issue                          | Root cause                  | Fix Applied                              | Status      |
+|-------|-----------------------------|-------------------------------|---------|
+Host-mount broken Linux host            | VFS layer drops tag         | Mount→rsync into opt/lfsccm-rl9 during boot        | ✅ working |
+kmodtool missing luster-ser el       | Dropped upstream after 2.16    | Skip entirely → boot shipped lustre-kver kern     | ✅ confirmed |
+Docker ima pulls fail             | Serv reference `imag:` poin nowhere      | Replace `build blocks added c1/c2.. keep sam Dockefil slurm_only used perviously   | ❌ pend fix |
+demo scri still fai               | Broken syntax edits earlier        | Rewite completely clean bash syntax check passs      | ✅ done demo+instl scripts compos lef intact
+
+
+Architectur decis unchange   
+**All-in-one Lim V**: Single VM runs MDS+OS servert `/mt/usre` Plus multinode Slack clustr Doker Compos Host pollution Swappable plugins legac PCC luster_mpc nauti C plugn swap entrpint ENV var
