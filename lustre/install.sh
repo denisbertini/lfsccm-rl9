@@ -8,11 +8,13 @@ sudo dnf -y --nogpgcheck --enablerepo=lustre-server install \
   lustre \
   lustre-osd-ldiskfs-mount
 
-# Recompile kmods against the currently-running kernel
-echo "=== Running kmodtool prepare (may take a few minutes)... ==="
-sudo /usr/sbin/kmodtool prepare
+# Lustre 2.17 ships precompiled kmods for its own kernel — boot into it
+LUSTRE_KVER="5.14.0-611.13.1_lustre.el9.x86_64"
+echo "=== Preparing Lustre kernel initramfs..."
+sudo dracut --force --kver "$LUSTRE_KVER"
+sudo grubby --set-default "/boot/vmlinuz-$LUSTRE_KVER"
+echo "=== GRUB default set to Lustre kernel, reboot required ==="
+ls "/lib/modules/$LUSTRE_KVER/extra/lustre/fs/*.ko" > /dev/null && \
+    echo "Lustre kmods ready (will load after reboot into Lustre kernel)"
 
-# Verify kernel modules are available
-lsmod | grep lustre || echo "(modules not loaded yet — expected before setup)"
-
-echo "=== install done. Reboot: limactl stop lustre-rl9 && limactl start lustre-rl9 ==="
+echo "=== lustre packages installed ==="

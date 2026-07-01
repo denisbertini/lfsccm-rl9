@@ -35,6 +35,10 @@ services:
     privileged: true 
 
   slurmctld:
+    build:
+      context: .
+      args:
+        SLURM_TAG: ${SLURM_TAG}
     image: slurm-docker:${IMAGE_TAG}
     command: ["slurmctld"]
     container_name: slurmctld
@@ -54,6 +58,10 @@ services:
     privileged: true 
 
   c1:
+    build:
+      context: .
+      args:
+        SLURM_TAG: ${SLURM_TAG}
     image: slurm-docker:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c1
@@ -73,6 +81,10 @@ services:
     privileged: true 
 
   c2:
+    build:
+      context: .
+      args:
+        SLURM_TAG: ${SLURM_TAG}
     image: slurm-docker:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c2
@@ -92,6 +104,10 @@ services:
     privileged: true 
 
   c3:
+    build:
+      context: .
+      args:
+        SLURM_TAG: ${SLURM_TAG}
     image: slurm-docker:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c3
@@ -110,6 +126,10 @@ services:
       - slurm-network
     privileged: true 
   c4:
+    build:
+      context: .
+      args:
+        SLURM_TAG: ${SLURM_TAG}
     image: slurm-docker:${IMAGE_TAG}
     command: ["slurmd"]
     hostname: c4

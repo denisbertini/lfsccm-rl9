@@ -5,9 +5,8 @@ images:
   - location: "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
     arch: "x86_64"
 
-mounts:
-  - location: "~"
-
+# NOTE: mounts disabled – Rocky 9 kernel lacks 9pnet_virtio module.
+# Repo files delivered via rsync into /opt/lfsccm-rl9 during demo.sh steps.
 
 vmOpts:
   qemu:
